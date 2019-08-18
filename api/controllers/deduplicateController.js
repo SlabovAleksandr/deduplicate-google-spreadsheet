@@ -75,36 +75,40 @@ exports.deduplicate = (req, res) => {
     const deduplicated = [];
     tabA.forEach(entryA => {
       let includedEntryA = false;
-      deduplicated.forEach((entryC, i, srcArr) => {
+
+      for (const [key, entryC] of deduplicated.entries()) {
         if (entryC[0] === entryA[0] && entryC[1] === entryA[1] && entryC[2] === entryA[2]) {
           includedEntryA = true;
-          srcArr[i] = [
+          deduplicated[key] = [
             entryC[0],
             entryC[1],
             entryC[2],
             entryA[3] || entryC[3],
             entryA[4] || entryC[4]
           ];
+          break;
         }
-      });
+      }
 
       if (!includedEntryA) deduplicated.push(entryA);
     });
 
     tabB.forEach(entryB => {
       let includedEntryB = false;
-      deduplicated.forEach((entryC, i, srcArr) => {
+
+      for (const [key, entryC] of deduplicated.entries()) {
         if (entryB[0] === entryC[0] && entryB[1] === entryC[1] && entryB[2] === entryC[2]) {
           includedEntryB = true;
-          srcArr[i] = [
+          deduplicated[key] = [
             entryC[0],
             entryC[1],
             entryC[2],
             entryC[3] || entryB[3],
             entryC[4] || entryB[4]
           ];
+          break;
         }
-      });
+      }
 
       if (!includedEntryB) deduplicated.push(entryB);
     })
