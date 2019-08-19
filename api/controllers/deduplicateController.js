@@ -87,8 +87,8 @@ exports.deduplicate = (req, res) => {
 
       for (const [key, entryC] of deduplicated.entries()) {
         if (
-          entryC.firstname === entryA[rowKeysA.firstname]
-          && entryC.lastname === entryA[rowKeysA.lastname]
+          entryC.firstName === entryA[rowKeysA.firstName]
+          && entryC.lastName === entryA[rowKeysA.lastName]
           && entryC.email === entryA[rowKeysA.email]
         ) {
           includedEntryA = true;
@@ -113,8 +113,8 @@ exports.deduplicate = (req, res) => {
 
       for (const [key, entryC] of Object.entries(deduplicated)) {
         if (
-          entryB[rowKeysB.firstname] === entryC.firstname
-          && entryB[rowKeysB.lastname] === entryC.lastname
+          entryB[rowKeysB.firstName] === entryC.firstName
+          && entryB[rowKeysB.lastName] === entryC.lastName
           && entryB[rowKeysB.email] === entryC.email
         ) {
           includedEntryB = true;
