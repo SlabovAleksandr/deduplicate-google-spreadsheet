@@ -66,57 +66,80 @@ exports.deduplicate = (req, res) => {
   const sheets = google.sheets({ version: 'v4', auth: oAuth2Client });
   sheets.spreadsheets.values.batchGet({
     spreadsheetId: id,
-    ranges: ["'A'!A2:E", "'B'!A2:E"],
+    ranges: ["'A'!A1:Z", "'B'!A1:Z"],
   }, (err, result) => {
     if (err) return res.status(500).send(`The API returned an error: ${err}`);
     const tabA = result.data.valueRanges[0].values;
     const tabB = result.data.valueRanges[1].values;
+    const rowKeysA = {};
+    const rowKeysB = {};
+
+    for (const [key, rowName] of tabA.shift().entries()) {
+      rowKeysA[rowName] = key;
+    }
+    for (const [key, rowName] of tabB.shift().entries()) {
+      rowKeysB[rowName] = key;
+    }
 
     const deduplicated = [];
     tabA.forEach(entryA => {
       let includedEntryA = false;
 
       for (const [key, entryC] of deduplicated.entries()) {
-        if (entryC[0] === entryA[0] && entryC[1] === entryA[1] && entryC[2] === entryA[2]) {
+        if (
+          entryC.firstname === entryA[rowKeysA.firstname]
+          && entryC.lastname === entryA[rowKeysA.lastname]
+          && entryC.email === entryA[rowKeysA.email]
+        ) {
           includedEntryA = true;
-          deduplicated[key] = [
-            entryC[0],
-            entryC[1],
-            entryC[2],
-            entryA[3] || entryC[3],
-            entryA[4] || entryC[4]
-          ];
+          for (const rowName in rowKeysA) {
+            deduplicated[key][rowName] = entryC[rowName] || entryA[rowKeysA[rowName]];
+          }
           break;
         }
       }
 
-      if (!includedEntryA) deduplicated.push(entryA);
+      if (!includedEntryA) {
+        const entryAobj = {};
+        for (const rowName in rowKeysA) { 
+          entryAobj[rowName] = entryA[rowKeysA[rowName]];
+        }
+        deduplicated.push(entryAobj);
+      }
     });
 
     tabB.forEach(entryB => {
       let includedEntryB = false;
 
-      for (const [key, entryC] of deduplicated.entries()) {
-        if (entryB[0] === entryC[0] && entryB[1] === entryC[1] && entryB[2] === entryC[2]) {
+      for (const [key, entryC] of Object.entries(deduplicated)) {
+        if (
+          entryB[rowKeysB.firstname] === entryC.firstname
+          && entryB[rowKeysB.lastname] === entryC.lastname
+          && entryB[rowKeysB.email] === entryC.email
+        ) {
           includedEntryB = true;
-          deduplicated[key] = [
-            entryC[0],
-            entryC[1],
-            entryC[2],
-            entryC[3] || entryB[3],
-            entryC[4] || entryB[4]
-          ];
+          for (const rowName in rowKeysB) { 
+            deduplicated[key][rowName] = entryC[rowName] || entryB[rowKeysB[rowName]];
+          }
           break;
         }
       }
 
-      if (!includedEntryB) deduplicated.push(entryB);
+      if (!includedEntryB) {
+        const entryBobj = {};
+        for (const rowName in rowKeysA) { 
+          entryBobj[rowName] = entryB[rowKeysB[rowName]];
+        }
+        deduplicated.push(entryBobj);
+      }
     })
+
+    deduplicated.unshift(Object.keys(rowKeysA));
 
     sheets.spreadsheets.values.update({
       spreadsheetId: id,
-      range: "'C'!A2",
-      resource: { values: deduplicated },
+      range: "'C'!A1",
+      resource: { values: deduplicated.map( Object.values ) },
       valueInputOption: 'RAW'
     }, (err, result) => {
       if (err) return res.status(500).send(`The API returned an error: ${err}`);
